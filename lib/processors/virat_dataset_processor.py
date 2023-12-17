@@ -80,7 +80,7 @@ class ViratDatasetProcessor() :
                     "file_name": file_name,
                     "bbox_info": bbox_info
                     })
-        self.update_annotations(os.path.basename(file_path).split(".")[0], activities_in_file)
+        self.update_annotations(os.path.basename(file_path).split(".")[0]+".mp4", activities_in_file)
 
 
 

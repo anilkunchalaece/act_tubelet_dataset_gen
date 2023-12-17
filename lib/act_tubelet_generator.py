@@ -83,16 +83,35 @@ class ActTubeletGenerator():
         
         dataset_name = self.get_current_dataset_name()
         print(self.current_data.keys())
-        # process by each video
-        for each_video in self.current_data.keys() : # 'k' denotes the video / src dir name
-            logger.info(F"processing {each_video}")
-            
-            # if dataset doesn't have bbox annotations, run the pedestrian detector and get the detections
-            # add these detections to the data
-            if self.config['each_dataset_config'][dataset_name].get('bbox_info',False) == False:
-                data_format = self.config['each_dataset_config'][dataset_name]['data_format']
-                detections, frames_dir = self.get_person_detections(self.current_data[each_video][0]['src_path'], data_format)
 
+        # modifying this to process all videos first (i.e) convert them to frames
+        # and add the frames directory to the src_dir in each activity
+        
+        if self.config['each_dataset_config'][dataset_name].get('data_format','frames') == "video" :
+            logger.info(F"converting the videos into the frames")
+            all_videos = self.current_data.keys()
+            all_videos = [os.path.join(self.config['each_dataset_config'][dataset_name]['src_dir'],x) \
+                          for x in all_videos]
+            
+            pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+            pool.map(self.get_frames_from_video, all_videos)
+            pool.close()
+            pool.join()
+
+            # add the frames dir as the src_dir for each activity
+            for video_name in self.current_data.keys() :
+                for idx, act in enumerate(self.current_data[video_name]) :
+                    self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
+                                                                     video_name.split(".")[0])
+        
+        # if bbox info not available in the dataset, run the pedestrian detector and get the detections
+        # for all the cases, we only have one person in frame i.e one person per frame
+        if self.config['each_dataset_config'][dataset_name].get('bbox_info', False) == False :
+            
+            # we have to run this each video, cuda won't support multiprocessing (or does it ?)
+            for each_video in self.current_data.keys() :
+                detections = self.get_person_detections(self.current_data[each_video][0]['src_dir'])
+                # using '0' since all the activities in a single video has single frame
                 for act_idx, act in enumerate(self.current_data[each_video]) :
                     bbox_info = {}
                     ## add bounding box information using the detections
@@ -100,13 +119,33 @@ class ActTubeletGenerator():
                         bbox_info[F"img_{frame_idx:05d}"] = detections.get(F"img_{frame_idx:05d}")
 
                     self.current_data[each_video][act_idx]["bbox_info"] = bbox_info
-                    self.current_data[each_video][act_idx]["src_path"] = frames_dir
-            elif self.config['each_dataset_config'][dataset_name].get('data_format','frames') == "video":
-                video_file = os.path.join(self.config['each_dataset_config'][dataset_name]['src_dir'],F"{each_video}.mp4")
-                logger.info(video_file)
-                frames_dir = self.get_frames_from_video(video_file)
-                for act_idx, act in enumerate(self.current_data[each_video]) :
-                    self.current_data[each_video][act_idx]["src_path"] = frames_dir
+        
+        # This has been replaced by above code
+        # Leaving this here incase if I need later
+        # # process by each video
+        # for each_video in self.current_data.keys() : # 'k' denotes the video / src dir name
+        #     logger.info(F"processing {each_video}")
+            
+        #     # if dataset doesn't have bbox annotations, run the pedestrian detector and get the detections
+        #     # add these detections to the data
+        #     if self.config['each_dataset_config'][dataset_name].get('bbox_info',False) == False:
+        #         data_format = self.config['each_dataset_config'][dataset_name]['data_format']
+        #         detections, frames_dir = self.get_person_detections(self.current_data[each_video][0]['src_path'], data_format)
+
+        #         for act_idx, act in enumerate(self.current_data[each_video]) :
+        #             bbox_info = {}
+        #             ## add bounding box information using the detections
+        #             for frame_idx in range(act["start_f_no"], act["end_f_no"]) :
+        #                 bbox_info[F"img_{frame_idx:05d}"] = detections.get(F"img_{frame_idx:05d}")
+
+        #             self.current_data[each_video][act_idx]["bbox_info"] = bbox_info
+        #             self.current_data[each_video][act_idx]["src_path"] = frames_dir
+        #     elif self.config['each_dataset_config'][dataset_name].get('data_format','frames') == "video":
+        #         video_file = os.path.join(self.config['each_dataset_config'][dataset_name]['src_dir'],F"{each_video}.mp4")
+        #         logger.info(video_file)
+        #         frames_dir = self.get_frames_from_video(video_file)
+        #         for act_idx, act in enumerate(self.current_data[each_video]) :
+        #             self.current_data[each_video][act_idx]["src_path"] = frames_dir
         
         MAX_FRAMES_IN_SAMPLE = int(self.config["global_settings"]["max_duration"] * \
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])
@@ -123,7 +162,7 @@ class ActTubeletGenerator():
 
             for act_idx, act_info in enumerate(activities_in_sample) :
                 self.set_current_activity_info(act_info)
-                img_src_dir_path = act_info['src_path']
+                img_src_dir_path = act_info['src_dir']
                 all_src_imgs = os.listdir(img_src_dir_path)
                 act_start_frame_no = int(act_info['start_f_no'])
                 act_end_frame_no = int(act_info['end_f_no'])
@@ -139,7 +178,7 @@ class ActTubeletGenerator():
                     f_name_idx = 0
                     out_dir = os.path.join(self.config['global_settings']['output_dir'],self.get_current_dataset_name(),
                                             current_activity,
-                                            F"{os.path.basename(self.get_current_activity_info()['src_path'])}_act_{act_idx}_p{p_idx}"
+                                            F"{os.path.basename(self.get_current_activity_info()['src_dir'])}-{current_activity}_act{act_idx}_p{p_idx}"
                                             )
                     utils.create_dir_if_not_exists(out_dir)
                     # processing can be sequential or parllel.
@@ -175,7 +214,7 @@ class ActTubeletGenerator():
                         pool.join()
     
     def process_frame(self, out_dir, tubelet_range, idx) :
-        img_src_path = self.get_current_activity_info()['src_path']
+        img_src_path = self.get_current_activity_info()['src_dir']
         img_path = os.path.join(img_src_path,F"img_{idx:05d}.jpg")
         
         if not os.path.isfile(img_path) :
@@ -265,7 +304,7 @@ class ActTubeletGenerator():
             logger.error(F"unable to extract from video {video_name} to {output_dir} failed with {e.output.decode()}")
             raise
     
-    def get_person_detections(self, src_path, format) :
+    def get_person_detections(self, src_path, format=None) :
         """ Get the person detection from given a"""
         logger.info(F"currnet data of format {format} doesn't have any bounding box info, getting the bounding box info from given data")
 
