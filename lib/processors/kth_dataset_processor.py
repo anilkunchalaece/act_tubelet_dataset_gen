@@ -63,7 +63,7 @@ class KTHDatasetProcessor() :
             d = line.replace("\t\t"," ").replace("\t"," ").split(" ")
             activity = d[0].split("_")[1]
             file_name = F"{d[0]}_uncomp.avi"
-            frames = []
+            activities = []
 
             for f in d[2:] :
                 if len(f.split("-")) < 2 :
@@ -72,23 +72,25 @@ class KTHDatasetProcessor() :
                 start_f_no = re.findall(r'\d+',f_nos[0])[0]
                 end_f_no = re.findall(r'\d+',f_nos[1])[0]
                 # print(start_f_no, end_f_no)
-                frames.append(
+                activities.append(
                     {
-                        "start_f_no" : start_f_no,
-                        "end_f_no" : end_f_no,
-                        "activity" : activity
+                        "start_f_no" : int(start_f_no),
+                        "end_f_no" : int(end_f_no),
+                        "activity" : activity,
+                        "src_path" : os.path.join(self.src_dir,file_name),
+                        "file_name" : file_name
                     }
                 )
-            activity_data = {
-                    # "activity" : activity,
-                    "src_path" : os.path.join(self.src_dir,file_name),
-                    "activities" : frames,
-                    # "activity" : activity
-                }
+            # activity_data = {
+            #         # "activity" : activity,
+            #         "src_path" : os.path.join(self.src_dir,file_name),
+            #         "activities" : activities,
+            #         # "activity" : activity
+            #     }
 
-            out[file_name] = activity_data
+            out[file_name] = activities
         
-        with open("kth_sequence_data.json","w") as fd :
-            json.dump(out,fd)
+        # with open("kth_sequence_data.json","w") as fd :
+        #     json.dump(out,fd)
         
         return out

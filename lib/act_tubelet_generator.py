@@ -6,8 +6,12 @@ import shutil
 import cv2
 import itertools 
 import subprocess
+import sys
+import multiprocessing
+from functools import partial
 
 from .processors.kth_dataset_processor import KTHDatasetProcessor
+from .processors.virat_dataset_processor import ViratDatasetProcessor
 from .utils import utils, person_detector
 
 
@@ -38,7 +42,7 @@ class ActTubeletGenerator():
     def set_current_activity_info(self,activity_info) :
         self.current_activity_info = activity_info
     
-    def get_current_acivity_info(self):
+    def get_current_activity_info(self):
         return self.current_activity_info
 
     def get_current_bbox_info(self) :
@@ -55,12 +59,22 @@ class ActTubeletGenerator():
             utils.create_dir_if_not_exists(self.config['global_settings'].get('tmp_dir','tmp'))
             self.set_current_dataset_name(k)
 
-            if k == "KTH" :
-                kth_data = KTHDatasetProcessor()
-                self.current_data = kth_data(self.config["each_dataset_config"]["KTH"])
-                self.current_data = dict(itertools.islice(self.current_data.items(), 2)) 
+            if k in self.config["global_settings"]["datasets_to_consider"] :
+                if k == "KTH" :
+                    kth_data = KTHDatasetProcessor()
+                    self.current_data = kth_data(self.config["each_dataset_config"]["KTH"])
+                elif k == "VIRAT" :
+                    virat_data = ViratDatasetProcessor()
+                    self.current_data = virat_data(self.config["each_dataset_config"]["VIRAT"])
+                else :
+                    logger.info(F"data processor not implemented for {k}")
+                    sys.exit()
+                
+                self.current_data = dict(itertools.islice(self.current_data.items(), 2)) # FOR TESTING
 
-            self.extract_tubelets()
+                self.extract_tubelets()
+            else :
+                logger.info(F"skipping {k}")
 
 
     def extract_tubelets(self) :
@@ -68,16 +82,31 @@ class ActTubeletGenerator():
         logger.info(F"extracting the processed data")
         
         dataset_name = self.get_current_dataset_name()
-
+        print(self.current_data.keys())
         # process by each video
         for each_video in self.current_data.keys() : # 'k' denotes the video / src dir name
             logger.info(F"processing {each_video}")
-
+            
+            # if dataset doesn't have bbox annotations, run the pedestrian detector and get the detections
+            # add these detections to the data
             if self.config['each_dataset_config'][dataset_name].get('bbox_info',False) == False:
                 data_format = self.config['each_dataset_config'][dataset_name]['data_format']
-                detections, frames_dir = self.get_person_detections(self.current_data[each_video]['src_path'], data_format)
-                self.current_data[each_video]['src_path'] = frames_dir
-                self.current_data[each_video]['bbox_info'] = detections
+                detections, frames_dir = self.get_person_detections(self.current_data[each_video][0]['src_path'], data_format)
+
+                for act_idx, act in enumerate(self.current_data[each_video]) :
+                    bbox_info = {}
+                    ## add bounding box information using the detections
+                    for frame_idx in range(act["start_f_no"], act["end_f_no"]) :
+                        bbox_info[F"img_{frame_idx:05d}"] = detections.get(F"img_{frame_idx:05d}")
+
+                    self.current_data[each_video][act_idx]["bbox_info"] = bbox_info
+                    self.current_data[each_video][act_idx]["src_path"] = frames_dir
+            elif self.config['each_dataset_config'][dataset_name].get('data_format','frames') == "video":
+                video_file = os.path.join(self.config['each_dataset_config'][dataset_name]['src_dir'],F"{each_video}.mp4")
+                logger.info(video_file)
+                frames_dir = self.get_frames_from_video(video_file)
+                for act_idx, act in enumerate(self.current_data[each_video]) :
+                    self.current_data[each_video][act_idx]["src_path"] = frames_dir
         
         MAX_FRAMES_IN_SAMPLE = int(self.config["global_settings"]["max_duration"] * \
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])
@@ -87,52 +116,92 @@ class ActTubeletGenerator():
         out_dir = os.path.join(self.config['global_settings']['output_dir'])
         utils.create_dir_if_not_exists(out_dir) # out root dir for dataset
 
-        with open("current_data.json","w") as fw :
-            json.dump(self.current_data,fw)
+        self.save_current_data()
 
         for video_name, activities_in_sample in self.current_data.items() :
             logger.info(F"processing {video_name}")
-            self.set_current_activity_info(activities_in_sample)
-            img_src_dir_path = activities_in_sample['src_path']
-            all_src_imgs = os.listdir(img_src_dir_path)
 
-            for act_idx, act_info in enumerate(activities_in_sample['activities']) :
+            for act_idx, act_info in enumerate(activities_in_sample) :
+                self.set_current_activity_info(act_info)
+                img_src_dir_path = act_info['src_path']
+                all_src_imgs = os.listdir(img_src_dir_path)
                 act_start_frame_no = int(act_info['start_f_no'])
                 act_end_frame_no = int(act_info['end_f_no'])
                 current_activity = act_info['activity']
-                logger.info(F"processing {current_activity} with frame range [{act_start_frame_no} to {act_end_frame_no}]")
+                # logger.info(F"processing {current_activity} with frame range [{act_start_frame_no} to {act_end_frame_no}]")
+                # logger.info(F"Generating the tubelets {self.config['global_settings']['processing']}")
 
                 for p_idx, idx_org in enumerate(range(act_start_frame_no, act_end_frame_no, MAX_FRAMES_IN_SAMPLE)) :
                     start_idx = idx_org
                     end_idx = start_idx + MAX_FRAMES_IN_SAMPLE
                     end_idx = end_idx if end_idx <= len(all_src_imgs) else len(all_src_imgs)
-                    logger.info(F"processing {start_idx} to {end_idx}")
+                    # logger.info(F"processing {start_idx} to {end_idx}")
                     f_name_idx = 0
                     out_dir = os.path.join(self.config['global_settings']['output_dir'],self.get_current_dataset_name(),
                                             current_activity,
-                                            F"{os.path.basename(self.get_current_acivity_info()['src_path'])}_act_{act_idx}_p{p_idx}"
+                                            F"{os.path.basename(self.get_current_activity_info()['src_path'])}_act_{act_idx}_p{p_idx}"
                                             )
-                    utils.create_dir_if_not_exists(out_dir)                    
-                    for idx in range(start_idx, end_idx) : 
-                        img_path = os.path.join(img_src_dir_path, F"img_{idx:05d}.jpg") # get image path based on current index
-                        # logger.info(F"image path is {img_path}")
-                        if not os.path.isfile(img_path) :
-                            logger.info(F"{img_path} not found skipping")
-                            continue
-                        
-                        bbox = self.get_bbox_for_idx(idx, [start_idx, end_idx])
-                        
-                        try :
-                            img = cv2.imread(img_path)
-                            crop_img = img[bbox[1]:bbox[3],bbox[0]:bbox[2]]
+                    utils.create_dir_if_not_exists(out_dir)
+                    # processing can be sequential or parllel.
+                    # its parllel by default
 
-                            out_img_path = os.path.join(out_dir,F"img_{f_name_idx:05d}.jpg")
-                            cv2.imwrite(out_img_path,crop_img)
-                            f_name_idx = f_name_idx + 1
-                        except Exception as e:
-                            logger.info(F"unable to write image! failed with exception {e}")
-                            raise
+                    if self.config['global_settings']['processing'] == "sequential" :   
+                        # REPLACING THIS WITH MUTLTI PROCESSING                 
+                        for idx in range(start_idx, end_idx) : 
+                            img_path = os.path.join(img_src_dir_path, F"img_{idx:05d}.jpg") # get image path based on current index
+                            # logger.info(F"image path is {img_path}")
+                            if not os.path.isfile(img_path) :
+                                logger.info(F"{img_path} not found skipping")
+                                continue
+                            
+                            bbox = self.get_bbox_for_idx(idx, [start_idx, end_idx])
+                            
+                            try :
+                                img = cv2.imread(img_path)
+                                crop_img = img[bbox[1]:bbox[3],bbox[0]:bbox[2]]
 
+                                out_img_path = os.path.join(out_dir,F"img_{f_name_idx:05d}.jpg")
+                                cv2.imwrite(out_img_path,crop_img)
+                                f_name_idx = f_name_idx + 1
+                            except Exception as e:
+                                logger.info(F"unable to write image! failed with exception {e}")
+                                raise
+                    else :
+                        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+                        frame_range = list(range(start_idx, end_idx))
+                        func = partial(self.process_frame, out_dir, [start_idx, end_idx])
+                        pool.map(func, frame_range)
+                        pool.close()
+                        pool.join()
+    
+    def process_frame(self, out_dir, tubelet_range, idx) :
+        img_src_path = self.get_current_activity_info()['src_path']
+        img_path = os.path.join(img_src_path,F"img_{idx:05d}.jpg")
+        
+        if not os.path.isfile(img_path) :
+            logger.info(F"{img_path} not found! skipping")
+            return
+        
+        try :
+            img = cv2.imread(img_path)
+            bbox = self.get_bbox_for_idx(idx, tubelet_range)
+            crop_img = img[bbox[1]:bbox[3],bbox[0]:bbox[2]]
+            f_name_idx = abs(idx - tubelet_range[0])
+            # logger.info(F"range {tubelet_range} , idx {idx}, img_{f_name_idx:05d}.jpg")
+            out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.jpg")
+            cv2.imwrite(out_img_path,crop_img)
+        except Exception as e:
+            logger.info(F"unable to write for {img_path}, skipping")
+            raise
+
+
+    
+    def save_current_data(self) :
+        path_to_save = os.path.join(self.config['global_settings']['output_dir'],
+                                    F"{self.get_current_dataset_name()}_data.json")
+        
+        with open(path_to_save,'w') as fw :
+            json.dump(self.current_data, fw)
 
     
     def get_bbox_for_idx(self, frame_idx, tubelet_idx_range) :

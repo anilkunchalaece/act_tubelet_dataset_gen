@@ -1,0 +1,33 @@
+{
+    "datasets" : [
+        "KTH" 
+    ],
+
+    "global_settings" : {
+        "min_duration" : 1,
+        "max_duration" : 2,
+        "src_data_fps" : "org",
+        "output_dir" : "Act_Tubelet_Dataset",
+        "bbox_variation" : "union",
+        "tmp_dir" : "tmp",
+        "processing" : "parllel",
+        "datasets_to_consider" : ["VIRAT"]
+    },
+
+    "each_dataset_config" : {
+        "KTH" : {
+            "sequence_file" : "data/kth/00sequences_modified.txt",
+            "fps" : 25,
+            "src_dir" : "/home/akunchala/Documents/z_Datasets/KTH_Dataset",
+            "bbox_info" : false,
+            "data_format" : "video"
+        },
+        "VIRAT" : {
+            "processed_annotations_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/virat_parsed_data",
+            "fps" : 30,
+            "src_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/VIRAT_GROUND_DATASET",
+            "bbox_info" : true,
+            "data_format" : "video"
+        }
+    }
+}
