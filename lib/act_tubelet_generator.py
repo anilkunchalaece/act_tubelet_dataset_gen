@@ -177,8 +177,8 @@ class ActTubeletGenerator():
                     # logger.info(F"processing {start_idx} to {end_idx}")
                     f_name_idx = 0
                     out_dir = os.path.join(self.config['global_settings']['output_dir'],self.get_current_dataset_name(),
-                                            current_activity,
-                                            F"{os.path.basename(self.get_current_activity_info()['src_dir'])}-{current_activity}_act{act_idx}_p{p_idx}"
+                                            # current_activity, -> skipping this, may be we don't need it
+                                            F"{self.get_current_dataset_name()}-{os.path.basename(self.get_current_activity_info()['src_dir'])}-{current_activity}_act{act_idx}_p{p_idx}"
                                             )
                     utils.create_dir_if_not_exists(out_dir)
                     # processing can be sequential or parllel.
@@ -230,8 +230,8 @@ class ActTubeletGenerator():
             out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.jpg")
             cv2.imwrite(out_img_path,crop_img)
         except Exception as e:
-            logger.info(F"unable to write for {img_path}, skipping")
-            raise
+            logger.info(F"unable to write for {img_path}, failed with {e}")
+            return
 
 
     
@@ -311,4 +311,4 @@ class ActTubeletGenerator():
         frames_dir = self.get_frames_from_video(src_path) if format == "video" else src_path
         
         detections = person_detector.get_person_bboxes_from_dir(frames_dir)
-        return detections, frames_dir
+        return detections

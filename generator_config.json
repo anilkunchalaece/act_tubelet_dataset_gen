@@ -11,7 +11,7 @@
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["VIRAT"]
+        "datasets_to_consider" : ["VIRAT","KTH"]
     },
 
     "each_dataset_config" : {
