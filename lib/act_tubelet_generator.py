@@ -67,8 +67,8 @@ class ActTubeletGenerator():
 
             if k in self.config["global_settings"]["datasets_to_consider"] :
                 if k == "KTH" :
-                    kth_data = KTHDatasetProcessor()
-                    self.current_data = kth_data(self.config["each_dataset_config"]["KTH"])
+                    kth_data = KTHDatasetProcessor(self.config["each_dataset_config"]["KTH"])
+                    self.current_data = kth_data()
                 elif k == "VIRAT" :
                     virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
                     self.current_data = virat_data()
@@ -86,22 +86,21 @@ class ActTubeletGenerator():
         logger.info(F"Generating the train and test splits")
         train_data = []
         test_data = []
+        train_test_split = {}
         # print(self.config['each_dataset_config'].keys())
         for k in self.config['each_dataset_config'].keys() :
             logger.info(F"Processing {k}")
-            train_test_split = {}
             self.set_current_dataset_name(k)
             self.set_frames_per_dataset()
             # print(self.config["global_settings"]["datasets_to_consider"])
             # print(k in self.config["global_settings"]["datasets_to_consider"])
             if k in self.config["global_settings"]["datasets_to_consider"] :
                 if k == "KTH" :
-                    kth_data = KTHDatasetProcessor()
-                    logger.info("Not implemented for KTH")
-                    continue
+                    kth_data = KTHDatasetProcessor(self.config["each_dataset_config"]["KTH"])
+                    train_test_split[k] = kth_data.get_train_test_split()
                 elif k == "VIRAT" :
                     virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
-                    train_test_split = virat_data.get_train_test_split()
+                    train_test_split[k] = virat_data.get_train_test_split()
                     # print(train_test_split)
                 else :
                     logger.info(F"not implemted for {k}")
@@ -109,22 +108,23 @@ class ActTubeletGenerator():
                 logger.info(F"NOT PROCESSING FOR {k}")
                 continue
 
-            all_dataset_samples = [ x for x in os.listdir(self.config['global_settings']['output_dir']) \
-                                   if os.path.isdir(os.path.join(self.config['global_settings']['output_dir'],x))]
-            
-            classes_list = list(set([ x.split("-")[2] for x in all_dataset_samples]))
+        all_dataset_samples = [ x for x in os.listdir(self.config['global_settings']['output_dir']) \
+                                if os.path.isdir(os.path.join(self.config['global_settings']['output_dir'],x))]
+        
+        classes_list = list(set([ x.split("-")[2] for x in all_dataset_samples]))
 
-            for each_sample in all_dataset_samples :
-                sample_length =len( os.listdir(os.path.join(self.config['global_settings']['output_dir'], each_sample)))
-                if sample_length > self.MIN_FRAMES_IN_SAMPLES :
-                    if each_sample.split("-")[1] in train_test_split["train"] :
-                        train_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
-                    elif each_sample.split("-")[1] in train_test_split["test"] :
-                        test_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
-                    else :
-                        logger.info(F"{os.path.basename(each_sample)} is not part of partition")
+        for each_sample in all_dataset_samples :
+            sample_length =len( os.listdir(os.path.join(self.config['global_settings']['output_dir'], each_sample)))
+            k = each_sample.split("-")[0] # get dataset name 
+            if sample_length > self.MIN_FRAMES_IN_SAMPLES :
+                if each_sample.split("-")[1] in train_test_split[k]["train"] :
+                    train_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
+                elif each_sample.split("-")[1] in train_test_split[k]["test"] :
+                    test_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
                 else :
-                    logger.info(F"Skipping {os.path.basename(each_sample)}, it contains only {sample_length} samples")
+                    logger.info(F"{os.path.basename(each_sample)} is not part of partition")
+            else :
+                logger.info(F"Skipping {os.path.basename(each_sample)}, it contains only {sample_length} samples")
 
             
         with open(os.path.join(self.config['global_settings']['output_dir'],"train.txt"),'w') as fw:

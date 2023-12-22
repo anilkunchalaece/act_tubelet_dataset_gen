@@ -5,8 +5,8 @@ from lib.act_tubelet_generator import ActTubeletGenerator
 
 def main(config_file) :
     generator = ActTubeletGenerator(config_file)
-    generator.generate_dataset()
-    # generator.get_train_test_split()
+    # generator.generate_dataset()
+    generator.get_train_test_split()
 
 
 
