@@ -37,16 +37,16 @@ class ViratDatasetProcessor() :
         assert(utils.check_if_dir_exists(train_files_dir)), "VIRAT train files dir {train_files_dir} not found"
         assert(utils.check_if_dir_exists(valid_files_dir)), "VIRAT valid files dir {valid_files_dir} not found"
 
-        train_files = [ os.path.join(train_files_dir,x) for x in os.listdir(train_files_dir)]
-        valid_files = [ os.path.join(valid_files_dir,x) for x in os.listdir(valid_files_dir)]
+        train_files = [ os.path.join(train_files_dir,x) for x in os.listdir(train_files_dir) if x.split(".")[-1] == "json"]
+        valid_files = [ os.path.join(valid_files_dir,x) for x in os.listdir(valid_files_dir) if x.split(".")[-1] == "json"]
         
         all_files = train_files + valid_files # combine both train and validation files
 
-        # for f_name in all_files :
-        #     self.process_each_file(f_name)
+        for f_name in all_files :
+            self.process_each_file(f_name)
         # multi-processing is not working - USING multi-threading instead
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            executor.map(self.process_each_file, all_files)
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        #     executor.map(self.process_each_file, all_files)
         return self.annotation_data
     
     def process_each_file(self,file_path) :
@@ -54,6 +54,8 @@ class ViratDatasetProcessor() :
             logger.info(F"{file_path} not exists, skipping")
             return
         
+        logger.info(F"processing {os.path.basename(file_path)} ..")
+
         with open(file_path) as fd :
             data = json.load(fd)
         
