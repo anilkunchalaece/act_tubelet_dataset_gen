@@ -13,18 +13,19 @@ from loguru import logger
 from lib.utils import utils
 
 class ViratDatasetProcessor() :
-    def __init__(self):
+    def __init__(self,config):
         logger.info("initialised virat data processor")
-        self.annotation_data = {}
-    
-    def __call__(self, config) :
         assert(config.get('processed_annotations_dir',None) != None), "processed_annotations is missing in VIRAT config"
         assert(config.get('src_dir',None) != None), "src_dir is missing in VIRAT config"
         assert(config.get('bbox_info',None) != None), "bbox_info is missing in VIRAT config"
         assert(config.get('data_format',None) != None), "data_format is missing in VIRAT config"
+        self.config = config
+        self.annotation_data = {}
+    
+    def __call__(self) :
 
-        self.src_dir = config.get('src_dir')
-        processed_annotations_dir = config.get('processed_annotations_dir')
+        self.src_dir = self.config.get('src_dir')
+        processed_annotations_dir = self.config.get('processed_annotations_dir')
         assert(utils.check_if_dir_exists(processed_annotations_dir)), F"{processed_annotations_dir} not found for VIRAT"
         return self.process_virat_annotation_files(processed_annotations_dir)
 
@@ -48,6 +49,19 @@ class ViratDatasetProcessor() :
         # with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         #     executor.map(self.process_each_file, all_files)
         return self.annotation_data
+
+    def get_train_test_split(self) :
+        annotation_dir = self.config.get('processed_annotations_dir')
+        train_files_dir = os.path.join(annotation_dir,"train")
+        valid_files_dir = os.path.join(annotation_dir,"validate")
+
+        train_files = [ x.split(".")[0] for x in os.listdir(train_files_dir) if x.split(".")[-1] == "json"]
+        valid_files = [ x.split(".")[0] for x in os.listdir(valid_files_dir) if x.split(".")[-1] == "json"]
+        return {
+            "train" : train_files,
+            "test" : valid_files
+        }
+        
     
     def process_each_file(self,file_path) :
         if not utils.check_if_file_exists(file_path) :

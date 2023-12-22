@@ -70,8 +70,8 @@ class ActTubeletGenerator():
                     kth_data = KTHDatasetProcessor()
                     self.current_data = kth_data(self.config["each_dataset_config"]["KTH"])
                 elif k == "VIRAT" :
-                    virat_data = ViratDatasetProcessor()
-                    self.current_data = virat_data(self.config["each_dataset_config"]["VIRAT"])
+                    virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
+                    self.current_data = virat_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
@@ -82,6 +82,59 @@ class ActTubeletGenerator():
             else :
                 logger.info(F"skipping {k}")
 
+    def get_train_test_split(self) :
+        logger.info(F"Generating the train and test splits")
+        train_data = []
+        test_data = []
+        # print(self.config['each_dataset_config'].keys())
+        for k in self.config['each_dataset_config'].keys() :
+            logger.info(F"Processing {k}")
+            train_test_split = {}
+            self.set_current_dataset_name(k)
+            self.set_frames_per_dataset()
+            # print(self.config["global_settings"]["datasets_to_consider"])
+            # print(k in self.config["global_settings"]["datasets_to_consider"])
+            if k in self.config["global_settings"]["datasets_to_consider"] :
+                if k == "KTH" :
+                    kth_data = KTHDatasetProcessor()
+                    logger.info("Not implemented for KTH")
+                    continue
+                elif k == "VIRAT" :
+                    virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
+                    train_test_split = virat_data.get_train_test_split()
+                    # print(train_test_split)
+                else :
+                    logger.info(F"not implemted for {k}")
+            else :
+                logger.info(F"NOT PROCESSING FOR {k}")
+                continue
+
+            all_dataset_samples = [ x for x in os.listdir(self.config['global_settings']['output_dir']) \
+                                   if os.path.isdir(os.path.join(self.config['global_settings']['output_dir'],x))]
+            
+            classes_list = list(set([ x.split("-")[2] for x in all_dataset_samples]))
+
+            for each_sample in all_dataset_samples :
+                sample_length =len( os.listdir(os.path.join(self.config['global_settings']['output_dir'], each_sample)))
+                if sample_length > self.MIN_FRAMES_IN_SAMPLES :
+                    if each_sample.split("-")[1] in train_test_split["train"] :
+                        train_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
+                    elif each_sample.split("-")[1] in train_test_split["test"] :
+                        test_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
+                    else :
+                        logger.info(F"{os.path.basename(each_sample)} is not part of partition")
+                else :
+                    logger.info(F"Skipping {os.path.basename(each_sample)}, it contains only {sample_length} samples")
+
+            
+        with open(os.path.join(self.config['global_settings']['output_dir'],"train.txt"),'w') as fw:
+            fw.writelines(train_data)
+        with open(os.path.join(self.config['global_settings']['output_dir'],"test.txt"),'w') as fw :
+            fw.writelines(test_data)
+        with open(os.path.join(self.config['global_settings']['output_dir'],"class_list.txt"),'w') as fw :
+            fw.writelines([ F"{x}\n" for x in classes_list])
+
+        logger.info(F"Dataset annotations are saved to {self.config['global_settings']['output_dir']}")                      
 
     def extract_tubelets(self) :
         """ This function will do post processing (such as get person detections) if needed and extract the tubelets"""
@@ -157,7 +210,8 @@ class ActTubeletGenerator():
             end_idx = end_idx if end_idx <= len(all_src_imgs) else len(all_src_imgs)
             # logger.info(F"processing {start_idx} to {end_idx}")
             f_name_idx = 0
-            out_dir = os.path.join(self.config['global_settings']['output_dir'],self.get_current_dataset_name(),
+            out_dir = os.path.join(self.config['global_settings']['output_dir'],
+                                    # self.get_current_dataset_name(), -> skipping this as well store all of these in the same dir
                                     # current_activity, -> skipping this, may be we don't need it
                                     F"{self.get_current_dataset_name()}-{os.path.basename(activity_info['src_dir'])}-{activity_name}-idx{act_start_frame_no}_{act_end_frame_no}-p{p_idx}"
                                     )
@@ -214,8 +268,6 @@ class ActTubeletGenerator():
             bboxes_for_range = [get_bbox(i) for i in range(tubelet_idx_range[0],tubelet_idx_range[1]) if get_bbox(i) != None]
             return self.union_of_bounding_boxes(bboxes_for_range)
 
-
-        
 
 
     def union_of_bounding_boxes(self, bounding_boxes):
