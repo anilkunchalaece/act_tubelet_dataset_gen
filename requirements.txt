@@ -35,3 +35,4 @@ imagesize
 ruptures
 loguru
 ffmpeg-python
+pyyaml
