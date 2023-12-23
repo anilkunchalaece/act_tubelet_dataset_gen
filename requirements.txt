@@ -36,3 +36,4 @@ ruptures
 loguru
 ffmpeg-python
 pyyaml
+pybboxes

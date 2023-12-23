@@ -5,13 +5,13 @@
 
     "global_settings" : {
         "min_duration" : 1,
-        "max_duration" : 2,
+        "max_duration" : 10,
         "src_data_fps" : "org",
         "output_dir" : "Act_Tubelet_Dataset",
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["VIRAT","KTH"]
+        "datasets_to_consider" : ["JRDBACT"]
     },
 
     "each_dataset_config" : {
@@ -23,11 +23,18 @@
             "data_format" : "video"
         },
         "VIRAT" : {
-            "processed_annotations_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/virat_parsed_data",
+            "processed_annotations_dir" : "/home/akunchala/Documents/z_Datasets/VIRAT/viratannotations",
             "fps" : 30,
             "src_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/VIRAT_GROUND_DATASET",
             "bbox_info" : true,
             "data_format" : "video"
+        },
+        "JRDBACT" : {
+            "labels_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/labels_ex",
+            "src_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/images",
+            "fps" : 7,
+            "bbox_info" : true,
+            "data_format" : "image"
         }
     }
 }

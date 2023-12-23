@@ -12,6 +12,8 @@ from functools import partial
 
 from .processors.kth_dataset_processor import KTHDatasetProcessor
 from .processors.virat_dataset_processor import ViratDatasetProcessor
+from .processors.jrdbact_dataset_processor import JRDBActDatasetProcessor
+
 from .utils import utils, person_detector
 
 
@@ -72,6 +74,9 @@ class ActTubeletGenerator():
                 elif k == "VIRAT" :
                     virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
                     self.current_data = virat_data()
+                elif k == "JRDBACT" :
+                    jrdbact_data = JRDBActDatasetProcessor(self.config['each_dataset_config']["JRDBACT"])
+                    self.current_data = jrdbact_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
@@ -213,12 +218,15 @@ class ActTubeletGenerator():
             out_dir = os.path.join(self.config['global_settings']['output_dir'],
                                     # self.get_current_dataset_name(), -> skipping this as well store all of these in the same dir
                                     # current_activity, -> skipping this, may be we don't need it
-                                    F"{self.get_current_dataset_name()}-{os.path.basename(activity_info['src_dir'])}-{activity_name}-idx{act_start_frame_no}_{act_end_frame_no}-p{p_idx}"
+                                    F"{self.get_current_dataset_name()}-{os.path.basename(activity_info['src_dir'])}-{activity_name}-id{act_start_frame_no}_{act_end_frame_no}-p{p_idx}"
                                     )
             utils.create_dir_if_not_exists(out_dir)
 
             for idx in range(start_idx, end_idx) :
-                img_path = os.path.join(img_src_dir_path,F"img_{idx:05d}.jpg")
+                if self.get_current_dataset_name() != "JRDBACT" :
+                    img_path = os.path.join(img_src_dir_path,F"img_{idx:05d}.jpg")
+                else : # image names are having different notation for 
+                    img_path = os.path.join(img_src_dir_path,F"{idx:06d}.jpg")
 
                 if not os.path.isfile(img_path) :
                     logger.info(F"{img_path} not found! skipping")
