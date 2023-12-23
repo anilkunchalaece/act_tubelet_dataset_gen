@@ -17,9 +17,9 @@ Steps to extract tracklets
 
 import os
 import json
-from typing import Any
 from loguru import logger
 import pybboxes
+import random
 
 import cv2
 import multiprocessing
@@ -112,5 +112,44 @@ class JRDBActDatasetProcessor() :
         
         # with open("jrdb-act-ex.json","w") as fw :
         #     json.dump(out,fw)
-
         return out
+
+
+    def get_train_test_split(self, dataset_dir) :
+        """
+        JRDB-Act doesn't have train and validation test.
+        So we take the all the generated tubelets and split them into 75% (train) to 25% (test)
+
+        parameters
+        dataset_dir -> root dataset with jrbdact tubeletes
+        """
+        # get all the tubelets
+        all_tubelets = [ x for x in os.listdir(dataset_dir) if os.path.isdir(os.path.join(dataset_dir,x))]
+
+        # filter the jrdbact tubelets
+        jrdbact_tubelets = [x for x in all_tubelets if x.split("-")[0]=="JRDBACT"]
+        all_classes = list(set([x.split("-")[2] for x in jrdbact_tubelets]))
+        
+        logger.info(F"Total number of jrdbact tubelets are {len(jrdbact_tubelets)} with {len(all_classes)} => classes {all_classes}")
+        
+        train_files = []
+        test_files = []
+
+        for cls in all_classes :
+            cls_tubelets = [x for x in jrdbact_tubelets if x.split("-")[2] == cls]
+            no_of_test_samples = int(len(cls_tubelets) * 0.25) # get the 25% for test 
+            random.shuffle(cls_tubelets)
+            cls_test_files = cls_tubelets[:no_of_test_samples]
+            cls_train_files = cls_tubelets[no_of_test_samples:]
+            train_files.extend(cls_train_files)
+            test_files.extend(cls_test_files)
+        
+        logger.info(F"train samples {len(train_files)}, test samples {len(test_files)}")
+
+        return {
+            "train" : train_files,
+            "test" : test_files
+        }
+
+
+        

@@ -107,6 +107,9 @@ class ActTubeletGenerator():
                     virat_data = ViratDatasetProcessor(self.config["each_dataset_config"]["VIRAT"])
                     train_test_split[k] = virat_data.get_train_test_split()
                     # print(train_test_split)
+                elif k == "JRDBACT" :
+                    jrdbact_data = JRDBActDatasetProcessor(self.config["each_dataset_config"]["JRDBACT"])#
+                    train_test_split[k] = jrdbact_data.get_train_test_split(self.config["global_settings"]["output_dir"])
                 else :
                     logger.info(F"not implemted for {k}")
             else :
@@ -120,11 +123,15 @@ class ActTubeletGenerator():
 
         for each_sample in all_dataset_samples :
             sample_length =len( os.listdir(os.path.join(self.config['global_settings']['output_dir'], each_sample)))
-            k = each_sample.split("-")[0] # get dataset name 
+            k = each_sample.split("-")[0] # get dataset name
+            
+            # for JRDBACT consider entire dir name instead of video name -> since JRDB collects the data in single burst i.e it doesn't have any individual vidoes / all the images are part of single video ? 
+            each_dir_name = each_sample.split("-")[1] if k != "JRDBACT" else each_sample
+
             if sample_length > self.MIN_FRAMES_IN_SAMPLES :
-                if each_sample.split("-")[1] in train_test_split[k]["train"] :
+                if each_dir_name in train_test_split[k]["train"] :
                     train_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
-                elif each_sample.split("-")[1] in train_test_split[k]["test"] :
+                elif each_dir_name in train_test_split[k]["test"] :
                     test_data.append(F"{os.path.basename(each_sample)} {sample_length} {classes_list.index(os.path.basename(each_sample).split('-')[2])}\n")
                 else :
                     logger.info(F"{os.path.basename(each_sample)} is not part of partition")
@@ -218,7 +225,9 @@ class ActTubeletGenerator():
             out_dir = os.path.join(self.config['global_settings']['output_dir'],
                                     # self.get_current_dataset_name(), -> skipping this as well store all of these in the same dir
                                     # current_activity, -> skipping this, may be we don't need it
-                                    F"{self.get_current_dataset_name()}-{os.path.basename(activity_info['src_dir'])}-{activity_name}-id{act_start_frame_no}_{act_end_frame_no}-p{p_idx}"
+                                    # replacing '-' in src_dir name with '_' for consistency in tubelet dir name 
+                                    # replacing the spaces ' ' in activity aka class names with _ -> I dont know how its gonna pan out
+                                    F"{self.get_current_dataset_name()}-{os.path.basename(activity_info['src_dir']).replace('-','_')}-{activity_name.replace(' ','_')}-id{act_start_frame_no}_{act_end_frame_no}-p{p_idx}"
                                     )
             utils.create_dir_if_not_exists(out_dir)
 
