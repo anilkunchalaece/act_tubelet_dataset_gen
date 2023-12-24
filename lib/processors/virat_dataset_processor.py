@@ -115,6 +115,7 @@ class ViratDatasetProcessor() :
         train_files_dir = os.path.join(annotation_dir,"train")
         valid_files_dir = os.path.join(annotation_dir,"validate")
 
+        # virat train and valid sets are based on video's, so we should pass the video name as it is
         train_files = [ x.split(".")[0] for x in os.listdir(train_files_dir) if x.split(".")[-1] == "json"]
         valid_files = [ x.split(".")[0] for x in os.listdir(valid_files_dir) if x.split(".")[-1] == "json"]
         return {

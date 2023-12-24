@@ -13,6 +13,7 @@ from functools import partial
 from .processors.kth_dataset_processor import KTHDatasetProcessor
 from .processors.virat_dataset_processor import ViratDatasetProcessor
 from .processors.jrdbact_dataset_processor import JRDBActDatasetProcessor
+from .processors.okutama_dataset_processor import OkutamaDatasetProcessor
 
 from .utils import utils, person_detector
 
@@ -77,11 +78,14 @@ class ActTubeletGenerator():
                 elif k == "JRDBACT" :
                     jrdbact_data = JRDBActDatasetProcessor(self.config['each_dataset_config']["JRDBACT"])
                     self.current_data = jrdbact_data()
+                elif k == "OKUTAMA" :
+                    okutama_data = OkutamaDatasetProcessor(self.config['each_dataset_config']["OKUTAMA"])
+                    self.current_data = okutama_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
                 
-                self.current_data = dict(itertools.islice(self.current_data.items(), 2)) # FOR TESTING
+                self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
 
                 self.extract_tubelets()
             else :
@@ -174,7 +178,7 @@ class ActTubeletGenerator():
             for video_name in self.current_data.keys() :
                 for idx, act in enumerate(self.current_data[video_name]) :
                     self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
-                                                                     video_name.split(".")[0])
+                                                                     os.path.splitext(video_name)[0])
         
         # if bbox info not available in the dataset, run the pedestrian detector and get the detections
         # for all the cases, we only have one person in frame i.e one person per frame
@@ -306,7 +310,7 @@ class ActTubeletGenerator():
         """
         fps = self.config['global_settings'].get('src_data_fps','org')
         tmp_dir = os.path.join(self.config['global_settings'].get('tmp_dir','tmp'))
-        output_dir = os.path.join(tmp_dir,os.path.basename(video_name).split('.')[0])
+        output_dir = os.path.join(tmp_dir,os.path.splitext(os.path.basename(video_name))[0])
         utils.create_dir_if_not_exists(output_dir)
 
         logger.info(F"Converting {os.path.basename(video_name)} and storing frames in {output_dir}")

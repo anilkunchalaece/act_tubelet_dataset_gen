@@ -8,10 +8,10 @@
         "max_duration" : 10,
         "src_data_fps" : "org",
         "output_dir" : "Act_Tubelet_Dataset",
-        "bbox_variation" : "union",
+        "bbox_variation" : "org",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["JRDBACT"]
+        "datasets_to_consider" : ["OKUTAMA"]
     },
 
     "each_dataset_config" : {
@@ -35,6 +35,13 @@
             "fps" : 7,
             "bbox_info" : true,
             "data_format" : "image"
+        },
+        "OKUTAMA" : {
+            "labels_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action/SingleActionLabels/3840x2160",
+            "src_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action",
+            "fps" : 30,
+            "bbox_info" : true,
+            "data_format" : "video"
         }
     }
 }

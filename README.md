@@ -17,3 +17,5 @@ generate the action centric tubelet dataset
 #### Known Issues
 1. When using *org* bbox variation, few frames may skipped due to errors. 
     1.1 Need to write script to check for these and make duplicates for missing frames if necessary 
+2. OKUTAMA tubelets
+    There is a issue with Union bbox variation, for this dataset, we have to stick with "org" bbox variation
