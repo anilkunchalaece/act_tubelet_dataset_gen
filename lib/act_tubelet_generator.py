@@ -14,6 +14,7 @@ from .processors.kth_dataset_processor import KTHDatasetProcessor
 from .processors.virat_dataset_processor import ViratDatasetProcessor
 from .processors.jrdbact_dataset_processor import JRDBActDatasetProcessor
 from .processors.okutama_dataset_processor import OkutamaDatasetProcessor
+from .processors.ucfarg_dataset_processor import UCFARGDatasetProcessor
 
 from .utils import utils, person_detector
 
@@ -81,12 +82,15 @@ class ActTubeletGenerator():
                 elif k == "OKUTAMA" :
                     okutama_data = OkutamaDatasetProcessor(self.config['each_dataset_config']["OKUTAMA"])
                     self.current_data = okutama_data()
+                elif k == "UCFARG" :
+                    ucfarg_data = UCFARGDatasetProcessor(self.config['each_dataset_config']["UCFARG"])
+                    self.current_data = ucfarg_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
                 
                 self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
-
+                self.save_current_data()
                 self.extract_tubelets()
             else :
                 logger.info(F"skipping {k}")
@@ -112,8 +116,14 @@ class ActTubeletGenerator():
                     train_test_split[k] = virat_data.get_train_test_split()
                     # print(train_test_split)
                 elif k == "JRDBACT" :
-                    jrdbact_data = JRDBActDatasetProcessor(self.config["each_dataset_config"]["JRDBACT"])#
+                    jrdbact_data = JRDBActDatasetProcessor(self.config["each_dataset_config"]["JRDBACT"])
                     train_test_split[k] = jrdbact_data.get_train_test_split(self.config["global_settings"]["output_dir"])
+                elif k == "OKUTAMA" :
+                    okutama_data = OkutamaDatasetProcessor(self.config["each_dataset_config"]["OKUTAMA"])
+                    train_test_split[k] = okutama_data.get_train_test_split(self.config["global_settings"]["output_dir"])
+                elif k == "UCFARG" :
+                    ucfarg_data = UCFARGDatasetProcessor(self.config["each_dataset_config"]["UCFARG"])
+                    train_test_split[k] = ucfarg_data.get_train_test_split(self.config["global_settings"]["output_dir"])
                 else :
                     logger.info(F"not implemted for {k}")
             else :
@@ -130,7 +140,7 @@ class ActTubeletGenerator():
             k = each_sample.split("-")[0] # get dataset name
             
             # for JRDBACT consider entire dir name instead of video name -> since JRDB collects the data in single burst i.e it doesn't have any individual vidoes / all the images are part of single video ? 
-            each_dir_name = each_sample.split("-")[1] if k != "JRDBACT" else each_sample
+            each_dir_name = each_sample.split("-")[1] if k not in ["JRDBACT","OKUTAMA","UCFARG"] else each_sample
 
             if sample_length > self.MIN_FRAMES_IN_SAMPLES :
                 if each_dir_name in train_test_split[k]["train"] :
@@ -178,7 +188,7 @@ class ActTubeletGenerator():
             for video_name in self.current_data.keys() :
                 for idx, act in enumerate(self.current_data[video_name]) :
                     self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
-                                                                     os.path.splitext(video_name)[0])
+                                                                     os.path.splitext(os.path.basename(video_name))[0] )
         
         # if bbox info not available in the dataset, run the pedestrian detector and get the detections
         # for all the cases, we only have one person in frame i.e one person per frame
@@ -187,6 +197,15 @@ class ActTubeletGenerator():
             # we have to run this each video, cuda won't support multiprocessing (or does it ?)
             for each_video in self.current_data.keys() :
                 detections = self.get_person_detections(self.current_data[each_video][0]['src_dir'])
+                if len(detections) == 0 :
+                    continue
+                # check for start_f_no and end_f_no
+                # we are assuming the each video has only class
+                if self.current_data[each_video][0].get("start_f_no",None) == None :
+                    all_frame_ids = [int(x.split("_")[-1]) for x in detections.keys()]
+                    self.current_data[each_video][0]["start_f_no"] = min(all_frame_ids)
+                    self.current_data[each_video][0]["end_f_no"] = max(all_frame_ids)
+        
                 # using '0' since all the activities in a single video has single frame
                 for act_idx, act in enumerate(self.current_data[each_video]) :
                     bbox_info = {}
@@ -194,8 +213,8 @@ class ActTubeletGenerator():
                     for frame_idx in range(act["start_f_no"], act["end_f_no"]) :
                         bbox_info[F"img_{frame_idx:05d}"] = detections.get(F"img_{frame_idx:05d}")
 
-                    self.current_data[each_video][act_idx]["bbox_info"] = bbox_info        
-        
+                    self.current_data[each_video][act_idx]["bbox_info"] = bbox_info
+
         out_dir = os.path.join(self.config['global_settings']['output_dir'])
         utils.create_dir_if_not_exists(out_dir) # out root dir for dataset
 
@@ -217,8 +236,13 @@ class ActTubeletGenerator():
     def process_each_activity(self,activity_info) :
         img_src_dir_path = activity_info['src_dir']
         all_src_imgs = os.listdir(img_src_dir_path)
-        act_start_frame_no = int(activity_info['start_f_no'])
-        act_end_frame_no = int(activity_info['end_f_no'])
+        act_start_frame_no = activity_info.get('start_f_no',None)
+        act_end_frame_no = activity_info.get('end_f_no',None)
+        if act_start_frame_no == None or act_end_frame_no == None :
+            logger.warning(F"Skipping {img_src_dir_path}, since we are unable to find any detections")
+            return
+        act_start_frame_no = int(act_start_frame_no)
+        act_end_frame_no = int(act_end_frame_no)
         activity_name = activity_info['activity']
         for p_idx, idx_org in enumerate(range(act_start_frame_no, act_end_frame_no, self.MAX_FRAMES_IN_SAMPLE)) :
             start_idx = idx_org
@@ -255,12 +279,15 @@ class ActTubeletGenerator():
                     cv2.imwrite(out_img_path,crop_img)
                     f_name_idx = f_name_idx + 1
                 except Exception as e:
-                    logger.info(F"unable to write for {img_path}, failed with {e}")
+                    pass
+                    # logger.info(F"unable to write for {img_path}, failed with {e} , bbox {bbox}, {img.shape} , {crop_img.shape}")
+                    # raise
                     # return
 
 
     
     def save_current_data(self) :
+        utils.create_dir_if_not_exists(self.config['global_settings']['output_dir'])
         path_to_save = os.path.join(self.config['global_settings']['output_dir'],
                                     F"{self.get_current_dataset_name()}_data.json")
         
@@ -281,6 +308,8 @@ class ActTubeletGenerator():
             img_key = F"img_{idx:05d}"
             return activity_info['bbox_info'].get(img_key,None)
         bbox_variation = self.config['global_settings']['bbox_variation']
+        # for OKUTAMA only consider the 'org' bounding boxes, since it has moving camera, union is only applicable for static camera
+        bbox_variation = bbox_variation if self.get_current_dataset_name() != "OKUTAMA" else "org"
         assert bbox_variation in ["org", "union"], F"unknown bbox variaion in config {bbox_variation}"
 
         if bbox_variation == "org" :
@@ -328,11 +357,10 @@ class ActTubeletGenerator():
             logger.error(F"unable to extract from video {video_name} to {output_dir} failed with {e.output.decode()}")
             raise
     
-    def get_person_detections(self, src_path, format=None) :
+    def get_person_detections(self, src_path, format="images") :
         """ Get the person detection from given a"""
-        logger.info(F"currnet data of format {format} doesn't have any bounding box info, getting the bounding box info from given data")
+        logger.info(F"currnet data of format {format} doesn't have any bounding box info, getting the bounding box info from {src_path}")
 
         frames_dir = self.get_frames_from_video(src_path) if format == "video" else src_path
-        
         detections = person_detector.get_person_bboxes_from_dir(frames_dir)
         return detections

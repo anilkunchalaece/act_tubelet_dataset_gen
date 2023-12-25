@@ -51,7 +51,7 @@ def run_inference(batches) :
     weights = FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.DEFAULT
     preprocess = weights.transforms()
     # model = fasterrcnn_resnet50_fpn_v2(weights=weights, box_score_thresh=0.75)
-    model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights, box_score_thresh=0.50)
+    model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights, box_score_thresh=0.90)
     model.to(device)
     model.eval()
     out_data = []

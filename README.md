@@ -19,3 +19,7 @@ generate the action centric tubelet dataset
     1.1 Need to write script to check for these and make duplicates for missing frames if necessary 
 2. OKUTAMA tubelets
     There is a issue with Union bbox variation, for this dataset, we have to stick with "org" bbox variation
+    This is mainly due to large camera variations, tubelet becoming too wide.
+    One more thing is, in okutama **camera is moving** i.e its on drone, so taking union of bounding boxes don't generate the expected results
+3. UCF ARG 
+    Torchvision models are unable to detect person in the rooftop and aerial videos (or sometimes detecting vehicle as pedestrians)
