@@ -15,6 +15,7 @@ from .processors.virat_dataset_processor import ViratDatasetProcessor
 from .processors.jrdbact_dataset_processor import JRDBActDatasetProcessor
 from .processors.okutama_dataset_processor import OkutamaDatasetProcessor
 from .processors.ucfarg_dataset_processor import UCFARGDatasetProcessor
+from .processors.mmact_dataset_processor import MMActDatasetProcessor
 
 from .utils import utils, person_detector
 
@@ -85,6 +86,9 @@ class ActTubeletGenerator():
                 elif k == "UCFARG" :
                     ucfarg_data = UCFARGDatasetProcessor(self.config['each_dataset_config']["UCFARG"])
                     self.current_data = ucfarg_data()
+                elif k == "MMACT" :
+                    mmact_data = MMActDatasetProcessor(self.config['each_dataset_config']["MMACT"])
+                    self.current_data = mmact_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
@@ -187,9 +191,12 @@ class ActTubeletGenerator():
             # add the frames dir as the src_dir for each activity
             for video_name in self.current_data.keys() :
                 for idx, act in enumerate(self.current_data[video_name]) :
-                    self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
+                    if self.get_current_dataset_name() != "MMACT" : 
+                        self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
                                                                      os.path.splitext(os.path.basename(video_name))[0] )
-        
+                    else :
+                        self.current_data[video_name][idx]['src_dir'] = os.path.join(self.config["global_settings"]["tmp_dir"],\
+                                                                    F"{'_'.join(video_name.split(os.sep)[-5:-1])}_{os.path.splitext(os.path.basename(video_name))[0]}")
         # if bbox info not available in the dataset, run the pedestrian detector and get the detections
         # for all the cases, we only have one person in frame i.e one person per frame
         if self.config['each_dataset_config'][dataset_name].get('bbox_info', False) == False :
@@ -339,7 +346,10 @@ class ActTubeletGenerator():
         """
         fps = self.config['global_settings'].get('src_data_fps','org')
         tmp_dir = os.path.join(self.config['global_settings'].get('tmp_dir','tmp'))
-        output_dir = os.path.join(tmp_dir,os.path.splitext(os.path.basename(video_name))[0])
+        if self.get_current_dataset_name() != "MMACT" :
+            output_dir = os.path.join(tmp_dir,os.path.splitext(os.path.basename(video_name))[0])
+        else :
+            output_dir = os.path.join(tmp_dir,F"{'_'.join(video_name.split(os.sep)[-5:-1])}_{os.path.splitext(os.path.basename(video_name))[0]}")
         utils.create_dir_if_not_exists(output_dir)
 
         logger.info(F"Converting {os.path.basename(video_name)} and storing frames in {output_dir}")

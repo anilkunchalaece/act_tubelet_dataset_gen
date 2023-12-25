@@ -37,3 +37,8 @@ loguru
 ffmpeg-python
 pyyaml
 pybboxes
+pandas
+tqdm
+matplotlib
+seaborn
+validators
