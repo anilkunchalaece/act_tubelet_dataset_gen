@@ -16,6 +16,7 @@ from .processors.jrdbact_dataset_processor import JRDBActDatasetProcessor
 from .processors.okutama_dataset_processor import OkutamaDatasetProcessor
 from .processors.ucfarg_dataset_processor import UCFARGDatasetProcessor
 from .processors.mmact_dataset_processor import MMActDatasetProcessor
+from .processors.mcad_dataset_processor import MCADDatasetProcessor
 
 from .utils import utils, person_detector
 
@@ -89,6 +90,9 @@ class ActTubeletGenerator():
                 elif k == "MMACT" :
                     mmact_data = MMActDatasetProcessor(self.config['each_dataset_config']["MMACT"])
                     self.current_data = mmact_data()
+                elif k == "MCAD" :
+                    mcad_data = MCADDatasetProcessor(self.config['each_dataset_config']["MCAD"])
+                    self.current_data = mcad_data()
                 else :
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
@@ -128,6 +132,12 @@ class ActTubeletGenerator():
                 elif k == "UCFARG" :
                     ucfarg_data = UCFARGDatasetProcessor(self.config["each_dataset_config"]["UCFARG"])
                     train_test_split[k] = ucfarg_data.get_train_test_split(self.config["global_settings"]["output_dir"])
+                elif k == "MMACT" :
+                    mmact_data = MMActDatasetProcessor(self.config["each_dataset_config"]["MMACT"])
+                    train_test_split[k] = mmact_data.get_train_test_split(self.config["global_settings"]["output_dir"])
+                elif k == "MCAD" :
+                    mcad_data = MCADDatasetProcessor(self.config["each_dataset_config"]["MCAD"])
+                    train_test_split[k] = mcad_data.get_train_test_split(self.config["global_settings"]["output_dir"])
                 else :
                     logger.info(F"not implemted for {k}")
             else :
@@ -144,7 +154,7 @@ class ActTubeletGenerator():
             k = each_sample.split("-")[0] # get dataset name
             
             # for JRDBACT consider entire dir name instead of video name -> since JRDB collects the data in single burst i.e it doesn't have any individual vidoes / all the images are part of single video ? 
-            each_dir_name = each_sample.split("-")[1] if k not in ["JRDBACT","OKUTAMA","UCFARG"] else each_sample
+            each_dir_name = each_sample.split("-")[1] if k not in ["JRDBACT","OKUTAMA","UCFARG","MMACT","MCAD"] else each_sample
 
             if sample_length > self.MIN_FRAMES_IN_SAMPLES :
                 if each_dir_name in train_test_split[k]["train"] :

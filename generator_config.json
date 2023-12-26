@@ -11,7 +11,7 @@
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["MMACT"]
+        "datasets_to_consider" : ["MCAD"]
     },
 
     "each_dataset_config" : {
@@ -51,6 +51,12 @@
         },
         "MMACT" : {
             "src_dir" : "/home/akunchala/Documents/z_Datasets/MMAct",
+            "fps" : 30,
+            "data_format" : "video",
+            "bbox_info" : false
+        },
+        "MCAD" : {
+            "src_dir" : "/home/akunchala/Documents/z_Datasets/MCAD",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false
