@@ -50,8 +50,10 @@ import multiprocessing
 from functools import partial
 
 from loguru import logger
-
-from lib.utils import utils
+try :
+    from lib.utils import utils
+except Exception as e :
+    import utils
 
 class ViratDatasetProcessor() :
     def __init__(self,config):
@@ -137,27 +139,32 @@ class ViratDatasetProcessor() :
         # acitivites are sorted with track_id
         # each track_id my contains multiple activities
         activities_in_file = []
+        print(data["bbox"].keys())
         for track_id , track_act_info in data['activity'].items() :
             for each_act in track_act_info :
                 frame_range = each_act["tsr0"]
                 activity = each_act["activity"]
+                # print(frame_range)
+                # print(len(data["bbox"][track_id]["ts0"]))
                 file_name = os.path.basename(file_path).split(".")[0]
                 bbox_info = {}
                 for frame_idx in range(min(frame_range), max(frame_range)) :
                     try :
-                        bbox_idx = data["bbox"][track_id]["ts0"].index(frame_idx) # get index from ts0
-                        bbox = data["bbox"][track_id]["g0"][bbox_idx]
+                        bbox_idx = data["bbox"][F"{track_id}"]["ts0"].index(frame_idx) # get index from ts0
+                        bbox = data["bbox"][F"{track_id}"]["g0"][bbox_idx]
                         bbox_info[F"img_{frame_idx:05d}"] = [int(x) for x in bbox.split(" ")]
-                    except :
-                        logger.info(F"Unable to get bbox_info for {frame_idx} of {activity} in {file_name}")
-            activities_in_file.append({
-                    "start_f_no": min(frame_range),
-                    "end_f_no": max(frame_range),
-                    "activity": activity,
-                    "file_name": file_name,
-                    "bbox_info": bbox_info
-                    })
+                    except Exception as e:
+                        logger.info(F"Unable to get bbox_info  tracker id {track_id} for {frame_idx} of {activity} in {file_name} failed with {e}")
+                        # raise
+                activities_in_file.append({
+                        "start_f_no": min(frame_range),
+                        "end_f_no": max(frame_range),
+                        "activity": activity,
+                        "file_name": file_name,
+                        "bbox_info": bbox_info
+                        })
         self.update_annotations(os.path.basename(file_path).split(".")[0]+".mp4", activities_in_file)
+        return activities_in_file
 
     def get_persons_from_types_file(self, fName) :
         with open(fName) as fd :
@@ -232,6 +239,14 @@ class ViratDatasetProcessor() :
         with open(out_file_name,'w') as fw :
             json.dump(out_data, fw)    
 
+
+
+if __name__ == "__main__" :
+    with open("/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/generator_config.json") as fd :
+        data = json.dump(fd)
+    virat_data = ViratDatasetProcessor(data["each_dataset_config"]["VIRAT"])
+    act_data = virat_data.process_each_file("/home/akunchala/Documents/z_Datasets/VIRAT/viratannotations/train/VIRAT_S_000002.json")
+    print(act_data)
 
 
         
