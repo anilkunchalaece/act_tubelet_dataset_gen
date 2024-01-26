@@ -18,6 +18,8 @@ from .processors.ucfarg_dataset_processor import UCFARGDatasetProcessor
 from .processors.mmact_dataset_processor import MMActDatasetProcessor
 from .processors.mcad_dataset_processor import MCADDatasetProcessor
 
+from .analysis.dataset_stats import DatasetStats
+
 from .utils import utils, person_detector
 
 
@@ -59,6 +61,13 @@ class ActTubeletGenerator():
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])
         self.MIN_FRAMES_IN_SAMPLES = int(self.config["global_settings"]["min_duration"] * \
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])    
+
+    def get_dataset_stats(self,class_to_include=[], key_word="filtered") :
+        dataset_stats = DatasetStats()
+        all_stats = dataset_stats(self.config["global_settings"]["output_dir"],
+                                  class_to_include, key_word)
+        with open("dataset_stats.json","w") as fw :
+            json.dump(all_stats,fw)
 
 
     def generate_dataset(self) :
@@ -292,7 +301,7 @@ class ActTubeletGenerator():
                     bbox = self.get_bbox_for_idx(idx, [start_idx,end_idx], activity_info)
                     crop_img = img[bbox[1]:bbox[3],bbox[0]:bbox[2]]
                     # logger.info(F"range {[start_idx, end_idx]} , idx {idx}, img_{f_name_idx:05d}.jpg")
-                    out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.png")
+                    out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.jpg")
                     cv2.imwrite(out_img_path,crop_img)
                     f_name_idx = f_name_idx + 1
                 except Exception as e:
