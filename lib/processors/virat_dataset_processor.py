@@ -64,6 +64,7 @@ class ViratDatasetProcessor() :
         assert(config.get('data_format',None) != None), "data_format is missing in VIRAT config"
         self.config = config
         self.annotation_data = {}
+        self.classes_to_include = config.get('classes_to_include',None)
     
     def __call__(self) :
 
@@ -156,6 +157,8 @@ class ViratDatasetProcessor() :
                     except Exception as e:
                         logger.info(F"Unable to get bbox_info  tracker id {track_id} for {frame_idx} of {activity} in {file_name} failed with {e}")
                         # raise
+                if self.classes_to_include is not None and activity not in self.classes_to_include :
+                    continue # skip if activity is not in classes_to_include
                 activities_in_file.append({
                         "start_f_no": min(frame_range),
                         "end_f_no": max(frame_range),

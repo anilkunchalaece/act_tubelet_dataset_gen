@@ -11,6 +11,7 @@ class MCADDatasetProcessor() :
         keys_to_check = ["src_dir","data_format", "bbox_info"]
         for k in keys_to_check :
             assert(self.config.get(k,None) != None), F"{k} not found in the MCAD dataset config"
+        self.classes_to_include = config.get('classes_to_include',None)
         self.LABEL_MATCHER = {
                     "A01" : "Point",
                     "A02" : "Wave",
@@ -42,10 +43,12 @@ class MCADDatasetProcessor() :
             all_videos = os.listdir(os.path.join(self.config["src_dir"], each_id_dir))
             for each_video in all_videos :
                 video_full_path = os.path.join(self.config["src_dir"],each_id_dir,each_video)
-
+                activity = self.LABEL_MATCHER.get(each_video.split("_")[-2])
+                if self.classes_to_include is not None and activity not in self.classes_to_include :
+                    continue # skip if activity is not in classes_to_include
                 all_activites[os.path.join(each_id_dir,each_video)] = [
                     {
-                        "activity" : self.LABEL_MATCHER.get(each_video.split("_")[-2]),
+                        "activity" : activity,
                         "src_path" : video_full_path,
                         "file_name" : video_full_path
                     }

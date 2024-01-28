@@ -106,7 +106,7 @@ class ActTubeletGenerator():
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
                 
-                self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
+                # self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
                 self.save_current_data()
                 self.extract_tubelets()
             else :
@@ -191,7 +191,7 @@ class ActTubeletGenerator():
         
         dataset_name = self.get_current_dataset_name()
         self.set_frames_per_dataset()
-        # print(self.current_data.keys())
+        logger.info(F"all the videos are : {self.current_data.keys()}")
 
         # modifying this to process all videos first (i.e) convert them to frames
         # and add the frames directory to the src_dir in each activity
@@ -222,6 +222,8 @@ class ActTubeletGenerator():
             
             # we have to run this each video, cuda won't support multiprocessing (or does it ?)
             for each_video in self.current_data.keys() :
+                if len(self.current_data[each_video]) == 0 :
+                    continue
                 detections = self.get_person_detections(self.current_data[each_video][0]['src_dir'])
                 if len(detections) == 0 :
                     continue
@@ -290,7 +292,7 @@ class ActTubeletGenerator():
                     img_path = os.path.join(img_src_dir_path,F"img_{idx:05d}.jpg")
                 else : # image names are having different notation for 
                     img_path = os.path.join(img_src_dir_path,F"{idx:06d}.jpg")
-
+                # logger.warning(F"img_path is {img_path}")
                 if not os.path.isfile(img_path) :
                     logger.info(F"{img_path} not found! skipping")
                     # return
@@ -305,8 +307,7 @@ class ActTubeletGenerator():
                     cv2.imwrite(out_img_path,crop_img)
                     f_name_idx = f_name_idx + 1
                 except Exception as e:
-                    pass
-                    # logger.info(F"unable to write for {img_path}, failed with {e} , bbox {bbox}, {img.shape} , {crop_img.shape}")
+                    logger.error(F"unable to write for {img_path}, failed with {e}")
                     # raise
                     # return
 
@@ -384,7 +385,7 @@ class ActTubeletGenerator():
             return output_dir
         except subprocess.CalledProcessError as e:
             logger.error(F"unable to extract from video {video_name} to {output_dir} failed with {e.output.decode()}")
-            raise
+            # raise
     
     def get_person_detections(self, src_path, format="images") :
         """ Get the person detection from given a"""

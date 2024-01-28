@@ -48,6 +48,7 @@ class KTHDatasetProcessor() :
         self.src_dir = config.get('src_dir')
         self.config_file = config.get('sequence_file')
         assert utils.check_if_file_exists(self.config_file), F"{self.config_file} not found for KTH"
+        self.classes_to_include = config.get('classes_to_include',None)
 
 
     def __call__(self):
@@ -64,14 +65,16 @@ class KTHDatasetProcessor() :
             activity = d[0].split("_")[1]
             file_name = F"{d[0]}_uncomp.avi"
             activities = []
-
+            
             for f in d[2:] :
-                if len(f.split("-")) < 2 :
+                if len(f.split("-")) < 2 : # skip the empty lines
                     continue
                 f_nos = f.split("-")
                 start_f_no = re.findall(r'\d+',f_nos[0])[0]
                 end_f_no = re.findall(r'\d+',f_nos[1])[0]
                 # print(start_f_no, end_f_no)
+                if self.classes_to_include is not None and activity not in self.classes_to_include :
+                    continue # skip if activity is not in classes_to_include
                 activities.append(
                     {
                         "start_f_no" : int(start_f_no),

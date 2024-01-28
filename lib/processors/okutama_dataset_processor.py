@@ -25,6 +25,7 @@ class OkutamaDatasetProcessor() :
         keys_to_check = ['labels_dir', 'src_dir', 'bbox_info', 'data_format']
         for k in keys_to_check :
             assert(self.config.get(k,None) != None), F"{k} is missing in the OKUTAMA config"
+        self.classes_to_include = config.get('classes_to_include',None)
         
     def __call__(self):
         return self.process_okumata_annotations()
@@ -57,11 +58,13 @@ class OkutamaDatasetProcessor() :
                         bbox_info[F"img_{int(ann[5]):05d}"] = [int(x) for x in ann[1:5]]
 
                     video_name = [ x for x in os.listdir(self.config["src_dir"]) if os.path.splitext(x)[0] == os.path.splitext(os.path.basename(f_name))[0]][0]
-
+                    activity = act.strip().replace('"','').replace("/","_").replace("\\","")
+                    if self.classes_to_include is not None and activity not in self.classes_to_include :
+                        continue # skip if activity is not in classes_to_include
                     act_info = {
                         "start_f_no" : start_f_no,
                         "end_f_no" : end_f_no,
-                        "activity" : act.strip().replace('"','').replace("/","_").replace("\\",""),
+                        "activity" : activity,
                         "file_name" : video_name,
                         "bbox_info" : bbox_info
                     }

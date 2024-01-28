@@ -7,11 +7,11 @@
         "min_duration" : 1,
         "max_duration" : 10,
         "src_data_fps" : "org",
-        "output_dir" : "Act_Tubelet_Dataset",
+        "output_dir" : "KTH_TEST",
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["MCAD"]
+        "datasets_to_consider" : ["KTH"]
     },
 
     "each_dataset_config" : {
@@ -20,46 +20,54 @@
             "fps" : 25,
             "src_dir" : "/home/akunchala/Documents/z_Datasets/KTH_Dataset",
             "bbox_info" : false,
-            "data_format" : "video"
+            "data_format" : "video",
+            "classes_to_include" : ["walking", "running", "jogging", "handwaving"]
         },
         "VIRAT" : {
             "processed_annotations_dir" : "/home/akunchala/Documents/z_Datasets/VIRAT/viratannotations",
             "fps" : 30,
             "src_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/VIRAT_GROUND_DATASET",
             "bbox_info" : true,
-            "data_format" : "video"
+            "data_format" : "video",
+            "classes_to_include" : ["activity_carrying", "activity_sitting", "activity_gesturing", "activity_standing",
+                                    "activity_running", "activity_walking", "specialized_talking_phone","specialized_texting_phone"]
         },
         "JRDBACT" : {
             "labels_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/labels_ex",
             "src_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/images",
             "fps" : 7,
             "bbox_info" : true,
-            "data_format" : "image"
+            "data_format" : "image",
+            "classes_to_include" : ["greeting_gestures", "running", "standing", "walking", "holding_sth", "sitting", "talking_on_the_phone"]
         },
         "OKUTAMA" : {
             "labels_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action/SingleActionLabels/3840x2160",
             "src_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action",
             "fps" : 10,
             "bbox_info" : true,
-            "data_format" : "video"
+            "data_format" : "video",
+            "classes_to_include" : ["Calling","Running","Sitting","Walking","Standing","Carrying"]
         },
         "UCFARG" : {
             "src_dir" : "/home/akunchala/Documents/z_Datasets/UCF_ARG",
             "fps" : 30,
             "data_format" : "video",
-            "bbox_info" : false
+            "bbox_info" : false,
+            "classes_to_include" : ["carrying","jogging","running","walking","waving"]
         },
         "MMACT" : {
             "src_dir" : "/home/akunchala/Documents/z_Datasets/MMAct",
             "fps" : 30,
             "data_format" : "video",
-            "bbox_info" : false
+            "bbox_info" : false,
+            "classes_to_include": ["carrying","running","standing","talking_on_phone","using_phone","walking","waving_hand"] 
         },
         "MCAD" : {
             "src_dir" : "/home/akunchala/Documents/z_Datasets/MCAD",
             "fps" : 30,
             "data_format" : "video",
-            "bbox_info" : false
+            "bbox_info" : false,
+            "classes_to_include" : ["CellToEar","PersonRun","SitDown","StandUp","TakePicture","UseCellPhone","Walk","Wave"]
         }
     }
 }
