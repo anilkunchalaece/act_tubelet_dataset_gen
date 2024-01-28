@@ -159,4 +159,6 @@ cython_debug/
 #.idea/
 
 tmp/*
-Act_Tubelet_Dataset/*
+Act_Tubelet_Dataset*/*
+tmp_*/*
+venv/*

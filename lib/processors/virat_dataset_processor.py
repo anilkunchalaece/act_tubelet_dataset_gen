@@ -139,7 +139,7 @@ class ViratDatasetProcessor() :
         # acitivites are sorted with track_id
         # each track_id my contains multiple activities
         activities_in_file = []
-        print(data["bbox"].keys())
+        # print(data["bbox"].keys())
         for track_id , track_act_info in data['activity'].items() :
             for each_act in track_act_info :
                 frame_range = each_act["tsr0"]
@@ -203,6 +203,10 @@ class ViratDatasetProcessor() :
         types_file = os.path.join(dir_name,F"{filename_without_ext}.types.yml")
         geom_file = os.path.join(dir_name, F"{filename_without_ext}.geom.yml")
         out_file_name = os.path.join(dir_name, F"{filename_without_ext}.json")
+
+        if utils.check_if_file_exists(out_file_name) :
+            # file exists skipping
+            return
 
         persons_track_ids = self.get_persons_from_types_file(types_file)
         person_bboxes = self.get_bboxes_for_persons(geom_file,persons_track_ids)

@@ -7,11 +7,11 @@
         "min_duration" : 1,
         "max_duration" : 10,
         "src_data_fps" : "org",
-        "output_dir" : "Act_Tubelet_Dataset",
+        "output_dir" : "Act_Tubelet_Dataset_UNION",
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["MCAD"]
+        "datasets_to_consider" : ["VIRAT"]
     },
 
     "each_dataset_config" : {
@@ -23,40 +23,40 @@
             "data_format" : "video"
         },
         "VIRAT" : {
-            "processed_annotations_dir" : "/home/akunchala/Documents/z_Datasets/VIRAT/viratannotations",
+            "processed_annotations_dir" : "/home/ICTDOMAIN/d20125529/datasets/VIRAT/viratannotations",
             "fps" : 30,
-            "src_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/VIRAT_GROUND_DATASET",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/VIRAT/VIRAT_GROUND_DATASET",
             "bbox_info" : true,
             "data_format" : "video"
         },
         "JRDBACT" : {
-            "labels_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/labels_ex",
-            "src_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/images",
+            "labels_dir" : "/home/ICTDOMAIN/d20125529/datasets/JRDB-Act/train_dataset_with_activity/labels/labels_2d",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/JRDB-Act/train_dataset_with_activity/images",
             "fps" : 7,
             "bbox_info" : true,
             "data_format" : "image"
         },
         "OKUTAMA" : {
-            "labels_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action/SingleActionLabels/3840x2160",
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action",
-            "fps" : 10,
+            "labels_dir" : "/home/ICTDOMAIN/d20125529/datasets/okutama-action/Labels/SingleActionLabels/3840x2160",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/okutama-action",
+            "fps" : 30,
             "bbox_info" : true,
             "data_format" : "video"
         },
         "UCFARG" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/UCF_ARG",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/UCF-ARG/data",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false
         },
         "MMACT" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/MMAct",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/MMAct/trimmed/data",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false
         },
         "MCAD" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/MCAD",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/MCAD",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false

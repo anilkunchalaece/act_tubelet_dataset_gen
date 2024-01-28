@@ -97,7 +97,7 @@ class ActTubeletGenerator():
                     logger.info(F"data processor not implemented for {k}")
                     sys.exit()
                 
-                self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
+                # self.current_data = dict(itertools.islice(self.current_data.items(), 20)) # FOR TESTING
                 self.save_current_data()
                 self.extract_tubelets()
             else :
@@ -292,7 +292,7 @@ class ActTubeletGenerator():
                     bbox = self.get_bbox_for_idx(idx, [start_idx,end_idx], activity_info)
                     crop_img = img[bbox[1]:bbox[3],bbox[0]:bbox[2]]
                     # logger.info(F"range {[start_idx, end_idx]} , idx {idx}, img_{f_name_idx:05d}.jpg")
-                    out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.png")
+                    out_img_path = os.path.join(out_dir, F"img_{f_name_idx:05d}.jpg")
                     cv2.imwrite(out_img_path,crop_img)
                     f_name_idx = f_name_idx + 1
                 except Exception as e:
@@ -327,15 +327,38 @@ class ActTubeletGenerator():
         bbox_variation = self.config['global_settings']['bbox_variation']
         # for OKUTAMA only consider the 'org' bounding boxes, since it has moving camera, union is only applicable for static camera
         bbox_variation = bbox_variation if self.get_current_dataset_name() != "OKUTAMA" else "org"
-        assert bbox_variation in ["org", "union"], F"unknown bbox variaion in config {bbox_variation}"
+        assert bbox_variation in ["org", "union", ], F"unknown bbox variaion in config {bbox_variation}"
 
         if bbox_variation == "org" :
             return get_bbox(frame_idx) # TODO -> need a way to skip the frame
         elif bbox_variation == "union" :
             bboxes_for_range = [get_bbox(i) for i in range(tubelet_idx_range[0],tubelet_idx_range[1]) if get_bbox(i) != None]
             return self.union_of_bounding_boxes(bboxes_for_range)
+        elif bbox_variation == "uniform" :
+            bboxes_for_range = [get_bbox(i) for i in range(tubelet_idx_range[0],tubelet_idx_range[1]) if get_bbox(i) != None]
+            return self.get_uniform_size_bounding_box(bboxes_for_range)
 
 
+    def get_uniform_size_bounding_box(self, bounding_boxes) :
+        # Parsing the bounding boxes into tuples of (x_min, y_min, x_max, y_max)
+        bounding_boxes = [tuple(map(int, box.split() if type(box) == str else box)) for box in bounding_boxes]
+        # Calculating the maximum width and height among all bounding boxes
+        max_width = max(box[2] - box[0] for box in bounding_boxes)
+        max_height = max(box[3] - box[1] for box in bounding_boxes)
+
+        uniform_boxes = []
+        for box in bounding_boxes:
+            x_center = (box[0] + box[2]) // 2
+            y_center = (box[1] + box[3]) // 2
+
+            x_min = x_center - max_width // 2
+            y_min = y_center - max_height // 2
+            x_max = x_center + max_width // 2
+            y_max = y_center + max_height // 2
+
+            uniform_boxes.append((x_min, y_min, x_max, y_max))
+
+        return uniform_boxes
 
     def union_of_bounding_boxes(self, bounding_boxes):
         # Parsing the bounding boxes into tuples of (x_min, y_min, x_max, y_max)
