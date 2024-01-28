@@ -11,6 +11,7 @@ class UCFARGDatasetProcessor() :
         keys_to_check = ["src_dir","data_format","bbox_info"]
         for k in keys_to_check :
             assert(self.config.get(k,None) != None), F"{k} is missing in the UCFARG config"
+        self.classes_to_include = config.get('classes_to_include',None)
 
     def __call__(self) :
         all_dirs = [os.path.join(self.config["src_dir"],x) for x in os.listdir(self.config["src_dir"])]
@@ -28,6 +29,9 @@ class UCFARGDatasetProcessor() :
                 all_videos = os.listdir(each_class_dir)
                 for each_video in all_videos :
                     each_video = os.path.join(each_class_dir,each_video)
+                    activity = os.path.basename(each_class_dir)
+                    if self.classes_to_include is not None and activity not in self.classes_to_include :
+                        continue # skip if activity is not in classes_to_include
                     all_activity_data[each_video] = [{
                         "activity" : os.path.basename(each_class_dir),
                         "src_path" : each_video,

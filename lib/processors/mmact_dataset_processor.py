@@ -12,6 +12,7 @@ class MMActDatasetProcessor() :
         keys_to_check = ["src_dir","data_format","bbox_info"]
         for k in keys_to_check :
             assert(self.config.get(k,None) != None), F"{k} is missing in the MMAct config"
+        self.classes_to_include = config.get('classes_to_include',None)
         
     def __call__(self):
         all_activities = {}
@@ -27,9 +28,13 @@ class MMActDatasetProcessor() :
                         for each_video in all_videos :
                             video_full_name = os.path.join(self.config["src_dir"],each_subject_dir, each_cam_dir, each_scene_dir,each_session, each_video)
                             video_subpath = os.path.join(each_subject_dir, each_cam_dir, each_scene_dir,each_session, each_video)
+                            activity = os.path.splitext(each_video)[0]
+                            if self.classes_to_include is not None and activity not in self.classes_to_include :
+                                continue # skip if activity is not in classes_to_include
+                            
                             all_activities[video_subpath] = [
                                 {
-                                    "activity" : os.path.splitext(each_video)[0],
+                                    "activity" : activity,
                                     "src_path" : video_full_name,
                                     "file_name" : video_full_name
                                 }

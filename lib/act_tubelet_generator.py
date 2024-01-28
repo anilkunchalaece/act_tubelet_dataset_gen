@@ -18,6 +18,8 @@ from .processors.ucfarg_dataset_processor import UCFARGDatasetProcessor
 from .processors.mmact_dataset_processor import MMActDatasetProcessor
 from .processors.mcad_dataset_processor import MCADDatasetProcessor
 
+from .analysis.dataset_stats import DatasetStats
+
 from .utils import utils, person_detector
 
 
@@ -59,6 +61,13 @@ class ActTubeletGenerator():
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])
         self.MIN_FRAMES_IN_SAMPLES = int(self.config["global_settings"]["min_duration"] * \
                                 self.config["each_dataset_config"][self.get_current_dataset_name()]["fps"])    
+
+    def get_dataset_stats(self,class_to_include=[], key_word="filtered") :
+        dataset_stats = DatasetStats()
+        all_stats = dataset_stats(self.config["global_settings"]["output_dir"],
+                                  class_to_include, key_word)
+        with open("dataset_stats.json","w") as fw :
+            json.dump(all_stats,fw)
 
 
     def generate_dataset(self) :
@@ -182,7 +191,7 @@ class ActTubeletGenerator():
         
         dataset_name = self.get_current_dataset_name()
         self.set_frames_per_dataset()
-        # print(self.current_data.keys())
+        logger.info(F"all the videos are : {self.current_data.keys()}")
 
         # modifying this to process all videos first (i.e) convert them to frames
         # and add the frames directory to the src_dir in each activity
@@ -213,6 +222,8 @@ class ActTubeletGenerator():
             
             # we have to run this each video, cuda won't support multiprocessing (or does it ?)
             for each_video in self.current_data.keys() :
+                if len(self.current_data[each_video]) == 0 :
+                    continue
                 detections = self.get_person_detections(self.current_data[each_video][0]['src_dir'])
                 if len(detections) == 0 :
                     continue
@@ -281,7 +292,7 @@ class ActTubeletGenerator():
                     img_path = os.path.join(img_src_dir_path,F"img_{idx:05d}.jpg")
                 else : # image names are having different notation for 
                     img_path = os.path.join(img_src_dir_path,F"{idx:06d}.jpg")
-
+                # logger.warning(F"img_path is {img_path}")
                 if not os.path.isfile(img_path) :
                     logger.info(F"{img_path} not found! skipping")
                     # return
@@ -296,8 +307,7 @@ class ActTubeletGenerator():
                     cv2.imwrite(out_img_path,crop_img)
                     f_name_idx = f_name_idx + 1
                 except Exception as e:
-                    pass
-                    # logger.info(F"unable to write for {img_path}, failed with {e} , bbox {bbox}, {img.shape} , {crop_img.shape}")
+                    logger.error(F"unable to write for {img_path}, failed with {e}")
                     # raise
                     # return
 
@@ -398,7 +408,7 @@ class ActTubeletGenerator():
             return output_dir
         except subprocess.CalledProcessError as e:
             logger.error(F"unable to extract from video {video_name} to {output_dir} failed with {e.output.decode()}")
-            raise
+            # raise
     
     def get_person_detections(self, src_path, format="images") :
         """ Get the person detection from given a"""

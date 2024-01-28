@@ -31,6 +31,7 @@ class JRDBActDatasetProcessor() :
         keys_to_check = ['labels_dir', 'src_dir', 'bbox_info', 'data_format']
         for k in keys_to_check :
             assert(self.config.get(k,None) != None), F"{k} is missing in the JRDBAct config"
+        self.classes_to_include = config.get('classes_to_include',None)
         
     
     def __call__(self):
@@ -59,6 +60,8 @@ class JRDBActDatasetProcessor() :
                         continue # don't process bboxes with height or width less than 10
 
                     for act in activity_label :
+                        if self.classes_to_include is not None and act not in self.classes_to_include :
+                            continue # skip if activity is not in classes_to_include                        
                         data_of_intrest = {
                             "file_name" : os.path.basename(f_name),
                             "person_id" : p_id,
