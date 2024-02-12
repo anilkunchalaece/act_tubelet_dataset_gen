@@ -7,63 +7,63 @@
         "min_duration" : 1,
         "max_duration" : 10,
         "src_data_fps" : "org",
-        "output_dir" : "KTH_TEST",
+        "output_dir" : "TUBELET_DATASET_FINAL",
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["KTH"]
+        "datasets_to_consider" : ["KTH","VIRAT","JRDBACT","OKUTAMA","UCFARG","MMACT","MCAD"]
     },
 
     "each_dataset_config" : {
         "KTH" : {
-            "sequence_file" : "data/kth/00sequences_modified.txt",
+            "sequence_file" : "/home/ICTDOMAIN/d20125529/datasets/KTH_DATASET/00sequences_modified.txt",
             "fps" : 25,
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/KTH_Dataset",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/KTH_DATASET",
             "bbox_info" : false,
             "data_format" : "video",
             "classes_to_include" : ["walking", "running", "jogging", "handwaving"]
         },
         "VIRAT" : {
-            "processed_annotations_dir" : "/home/akunchala/Documents/z_Datasets/VIRAT/viratannotations",
+            "processed_annotations_dir" : "/home/ICTDOMAIN/d20125529/datasets/VIRAT/viratannotations",
             "fps" : 30,
-            "src_dir" : "/home/akunchala/Documents/PhDStuff/act_tubelet_dataset_gen/data/virat/VIRAT_GROUND_DATASET",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/VIRAT/VIRAT_GROUND_DATASET",
             "bbox_info" : true,
             "data_format" : "video",
             "classes_to_include" : ["activity_carrying", "activity_sitting", "activity_gesturing", "activity_standing",
                                     "activity_running", "activity_walking", "specialized_talking_phone","specialized_texting_phone"]
         },
         "JRDBACT" : {
-            "labels_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/labels_ex",
-            "src_dir" : "/home/akunchala/Documents/PhDStuff/action_tracklet_parser/ex_jrdb-act_data/images",
+            "labels_dir" : "/home/ICTDOMAIN/d20125529/datasets/JRDB-Act/train_dataset_with_activity/labels/labels_2d",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/JRDB-Act/train_dataset_with_activity/images",
             "fps" : 7,
             "bbox_info" : true,
             "data_format" : "image",
             "classes_to_include" : ["greeting_gestures", "running", "standing", "walking", "holding_sth", "sitting", "talking_on_the_phone"]
         },
         "OKUTAMA" : {
-            "labels_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action/SingleActionLabels/3840x2160",
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/okutama-action",
-            "fps" : 10,
+            "labels_dir" : "/home/ICTDOMAIN/d20125529/datasets/okutama-action/Labels/SingleActionLabels/3840x2160",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/okutama-action",
+            "fps" : 30,
             "bbox_info" : true,
             "data_format" : "video",
             "classes_to_include" : ["Calling","Running","Sitting","Walking","Standing","Carrying"]
         },
         "UCFARG" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/UCF_ARG",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/UCF-ARG/data",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false,
             "classes_to_include" : ["carrying","jogging","running","walking","waving"]
         },
         "MMACT" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/MMAct",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/MMAct/trimmed/data",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false,
             "classes_to_include": ["carrying","running","standing","talking_on_phone","using_phone","walking","waving_hand"] 
         },
         "MCAD" : {
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/MCAD",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/MCAD",
             "fps" : 30,
             "data_format" : "video",
             "bbox_info" : false,

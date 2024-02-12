@@ -202,10 +202,16 @@ class ActTubeletGenerator():
             all_videos = [os.path.join(self.config['each_dataset_config'][dataset_name]['src_dir'],x) \
                           for x in all_videos]
             
-            pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-            pool.map(self.get_frames_from_video, all_videos)
-            pool.close()
-            pool.join()
+            # pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+            # pool.map(self.get_frames_from_video, all_videos,chunksize=10)
+            # pool.close()
+            # pool.join()
+            for v in all_videos:
+                try :
+                    self.get_frames_from_video(v)
+                except :
+                    logger.error(F"unable to extract frames from {v}")
+                
 
             # add the frames dir as the src_dir for each activity
             for video_name in self.current_data.keys() :
@@ -225,6 +231,7 @@ class ActTubeletGenerator():
                 if len(self.current_data[each_video]) == 0 :
                     continue
                 detections = self.get_person_detections(self.current_data[each_video][0]['src_dir'])
+                logger.info(F"Getting person detections from {os.path.basename(self.current_data[each_video][0]['src_dir'])}")
                 if len(detections) == 0 :
                     continue
                 # check for start_f_no and end_f_no
@@ -253,13 +260,13 @@ class ActTubeletGenerator():
             for each_act in self.current_data[each_video] :
                 all_activities.append(each_act)
         # For testing
-        # for act in all_activities :
-        #     self.process_each_activity(act)
-        #     break
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-        pool.map(self.process_each_activity, all_activities)
-        pool.close()
-        pool.join()
+        for act in all_activities :
+            self.process_each_activity(act)
+            # break
+        # pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        # pool.map(self.process_each_activity, all_activities,chunksize=10)
+        # pool.close()
+        # pool.join()
 
     def process_each_activity(self,activity_info) :
         img_src_dir_path = activity_info['src_dir']
@@ -337,15 +344,40 @@ class ActTubeletGenerator():
         bbox_variation = self.config['global_settings']['bbox_variation']
         # for OKUTAMA only consider the 'org' bounding boxes, since it has moving camera, union is only applicable for static camera
         bbox_variation = bbox_variation if self.get_current_dataset_name() != "OKUTAMA" else "org"
-        assert bbox_variation in ["org", "union"], F"unknown bbox variaion in config {bbox_variation}"
+        assert bbox_variation in ["org", "union", "uniform"], F"unknown bbox variaion in config {bbox_variation}"
 
         if bbox_variation == "org" :
             return get_bbox(frame_idx) # TODO -> need a way to skip the frame
         elif bbox_variation == "union" :
             bboxes_for_range = [get_bbox(i) for i in range(tubelet_idx_range[0],tubelet_idx_range[1]) if get_bbox(i) != None]
             return self.union_of_bounding_boxes(bboxes_for_range)
+        elif bbox_variation == "uniform" :
+            bboxes_for_range = [get_bbox(i) for i in range(tubelet_idx_range[0],tubelet_idx_range[1]) if get_bbox(i) != None]
+            return self.get_uniform_size_bounding_box(bboxes_for_range,frame_idx)
 
 
+    def get_uniform_size_bounding_box(self, bounding_boxes, frame_idx) :
+        # Parsing the bounding boxes into tuples of (x_min, y_min, x_max, y_max)
+        bounding_boxes = [tuple(map(int, box.split() if type(box) == str else box)) for box in bounding_boxes]
+        # Calculating the maximum width and height among all bounding boxes
+        max_width = max(box[2] - box[0] for box in bounding_boxes)
+        max_height = max(box[3] - box[1] for box in bounding_boxes)
+
+        uniform_boxes = []
+        for box in bounding_boxes:
+            x_center = (box[0] + box[2]) // 2
+            y_center = (box[1] + box[3]) // 2
+
+            x_min = x_center - max_width // 2
+            y_min = y_center - max_height // 2
+            x_max = x_center + max_width // 2
+            y_max = y_center + max_height // 2
+
+            uniform_boxes.append([x_min, y_min, x_max, y_max])
+        # logger.info(uniform_boxes)
+        # logger.info(frame_idx)
+
+        return uniform_boxes[frame_idx]
 
     def union_of_bounding_boxes(self, bounding_boxes):
         # Parsing the bounding boxes into tuples of (x_min, y_min, x_max, y_max)
@@ -357,7 +389,7 @@ class ActTubeletGenerator():
         x_max = max(box[2] for box in bounding_boxes)
         y_max = max(box[3] for box in bounding_boxes)
 
-        return x_min, y_min, x_max, y_max            
+        return [x_min, y_min, x_max, y_max]            
     
 
     def get_frames_from_video(self,video_name):
@@ -383,7 +415,7 @@ class ActTubeletGenerator():
 
             # subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             return output_dir
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             logger.error(F"unable to extract from video {video_name} to {output_dir} failed with {e.output.decode()}")
             # raise
     

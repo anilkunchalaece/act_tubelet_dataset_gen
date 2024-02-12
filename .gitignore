@@ -161,3 +161,7 @@ cython_debug/
 tmp/*
 Act_Tubelet_Dataset/*
 KTH_TEST/*
+Act_Tubelet_Dataset*/*
+tmp*/*
+venv/*
+TUBELET_DATASET_FINAL*/*
