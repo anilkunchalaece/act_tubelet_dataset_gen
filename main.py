@@ -34,7 +34,7 @@ CONCURRENT_ACTION_CLASSES = [
 def main(config_file) :
     generator = ActTubeletGenerator(config_file)
     generator.generate_dataset()
-    # generator.get_train_test_split()
+    generator.get_train_test_split()
     # generator.get_dataset_stats(CONCURRENT_ACTION_CLASSES,"concurrent_action")
 
 

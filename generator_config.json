@@ -7,18 +7,18 @@
         "min_duration" : 1,
         "max_duration" : 10,
         "src_data_fps" : "org",
-        "output_dir" : "KTH_TEST",
+        "output_dir" : "TUBELET_DATASET_FINAL",
         "bbox_variation" : "union",
         "tmp_dir" : "tmp",
         "processing" : "parllel",
-        "datasets_to_consider" : ["KTH"]
+        "datasets_to_consider" : ["KTH","VIRAT","JRDBACT","OKUTAMA","UCFARG","MMACT","MCAD"]
     },
 
     "each_dataset_config" : {
         "KTH" : {
-            "sequence_file" : "data/kth/00sequences_modified.txt",
+            "sequence_file" : "/home/ICTDOMAIN/d20125529/datasets/KTH_DATASET/00sequences_modified.txt",
             "fps" : 25,
-            "src_dir" : "/home/akunchala/Documents/z_Datasets/KTH_Dataset",
+            "src_dir" : "/home/ICTDOMAIN/d20125529/datasets/KTH_DATASET",
             "bbox_info" : false,
             "data_format" : "video",
             "classes_to_include" : ["walking", "running", "jogging", "handwaving"]
